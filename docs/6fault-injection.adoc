@@ -8,9 +8,9 @@ By default, recommendation v1 and v2 are being randomly load-balanced as that is
 
 [source,bash]
 ----
-$ oc get pods -l app=recommendation -n tutorial
+$ oc get pods -l app=recommendation -n $TUTORIAL_PROJECT
 or
-$ kubectl get pods -l app=recommendation -n tutorial
+$ kubectl get pods -l app=recommendation -n $TUTORIAL_PROJECT
 
 NAME                                  READY     STATUS    RESTARTS   AGE
 recommendation-v1-3719512284-7mlzw   2/2       Running   6          18h
@@ -21,14 +21,14 @@ You can inject 503's, for approximately 50% of the requests
 
 [source,bash]
 ----
-istioctl create -f istiofiles/destination-rule-recommendation.yml -n tutorial
-istioctl create -f istiofiles/virtual-service-recommendation-503.yml -n tutorial
+istioctl create -f istiofiles/destination-rule-recommendation.yml -n $TUTORIAL_PROJECT
+istioctl create -f istiofiles/virtual-service-recommendation-503.yml -n $TUTORIAL_PROJECT
 
-curl customer-tutorial.$(minishift ip).nip.io
+curl `oc get routes customer -o jsonpath --template '{.spec.host}'`
 customer => preference => recommendation v1 from '99634814-sf4cl': 88
-curl customer-tutorial.$(minishift ip).nip.io
+curl `oc get routes customer -o jsonpath --template '{.spec.host}'`
 customer => 503 preference => 503 fault filter abort
-curl customer-tutorial.$(minishift ip).nip.io
+curl `oc get routes customer -o jsonpath --template '{.spec.host}'`
 customer => preference => recommendation v2 from '2819441432-qsp25': 51
 ----
 
@@ -36,7 +36,7 @@ Clean up
 
 [source,bash]
 ----
-istioctl delete -f istiofiles/virtual-service-recommendation-503.yml -n tutorial
+istioctl delete -f istiofiles/virtual-service-recommendation-503.yml -n $TUTORIAL_PROJECT
 ----
 
 === Delay
@@ -45,7 +45,7 @@ The most insidious of possible distributed computing faults is not a "down" serv
 
 [source,bash]
 ----
-istioctl create -f istiofiles/virtual-service-recommendation-delay.yml -n tutorial
+istioctl create -f istiofiles/virtual-service-recommendation-delay.yml -n $TUTORIAL_PROJECT
 ----
 
 And hit the customer endpoint
@@ -55,7 +55,7 @@ And hit the customer endpoint
 #!/bin/bash
 while true
 do
-time curl customer-tutorial.$(minishift ip).nip.io
+time curl `oc get routes customer -o jsonpath --template '{.spec.host}'`
 sleep .5
 done
 ----
@@ -65,130 +65,20 @@ If you are monitoring the logs for recommendation v1 and v2, you will also see t
 
 [source,bash]
 ----
-stern recommendation -n tutorial
+oc logs dc/recommendation -n $TUTORIAL_PROJECT
 ----
-
-or
-`bash
-./kubetail.sh recommendation -n tutorial
-`
 
 Clean up
 
 [source]
 ----
-istioctl delete -f istiofiles/destination-rule-recommendation.yml -n tutorial
-istioctl delete -f istiofiles/virtual-service-recommendation-delay.yml -n tutorial
-----
-
-=== Retry [Not working for 1.0]
-
-Instead of failing immediately, retry the Service N more times
-
-We will use Istio and return 503's about 50% of the time. Send all users to v2 which will throw out some 503's
-
-[source,bash]
-----
-istioctl create -f istiofiles/destination-rule-recommendation-v2.yml -n tutorial
-istioctl create -f istiofiles/virtual-service-recommendation-v2_503.yml -n tutorial
-----
-
-Now, if you hit the customer endpoint several times, you should see some 503's
-
-[source,bash]
-----
-#!/bin/bash
-while true
-do
-curl customer-tutorial.$(minishift ip).nip.io
-sleep .5
-done
-
-customer => preference => recommendation v2 from '2036617847-m9glz': 190
-customer => preference => recommendation v2 from '2036617847-m9glz': 191
-customer => preference => recommendation v2 from '2036617847-m9glz': 192
-customer => 503 preference => 503 fault filter abort
-customer => preference => recommendation v2 from '2036617847-m9glz': 193
-customer => 503 preference => 503 fault filter abort
-customer => preference => recommendation v2 from '2036617847-m9glz': 194
-customer => 503 preference => 503 fault filter abort
-customer => preference => recommendation v2 from '2036617847-m9glz': 195
-customer => 503 preference => 503 fault filter abort
-----
-
-Now add the retry rule
-
-[source,bash]
-----
-istioctl create -f istiofiles/virtual-service-recommendation-v2_retry.yml -n tutorial
-----
-
-and after a few seconds, things will settle down and you will see it work every time
-
-[source,bash]
-----
-#!/bin/bash
-while true
-do
-curl customer-tutorial.$(minishift ip).nip.io
-sleep .5
-done
-
-customer => preference => recommendation v2 from '2036617847-m9glz': 196
-customer => preference => recommendation v2 from '2036617847-m9glz': 197
-customer => preference => recommendation v2 from '2036617847-m9glz': 198
-----
-
-You can see the active RouteRules via
-
-[source,bash]
-----
-istioctl get routerules -n tutorial
-----
-
-Now, delete the retry rule and see the old behavior, some random 503s
-
-[source,bash]
-----
-istioctl delete routerule recommendation-v2-retry -n tutorial
-
-while true
-do
-curl customer-tutorial.$(minishift ip).nip.io
-sleep .5
-done
-
-customer => preference => recommendation v2 from '2036617847-m9glz': 190
-customer => preference => recommendation v2 from '2036617847-m9glz': 191
-customer => preference => recommendation v2 from '2036617847-m9glz': 192
-customer => 503 preference => 503 fault filter abort
-customer => preference => recommendation v2 from '2036617847-m9glz': 193
-customer => 503 preference => 503 fault filter abort
-customer => preference => recommendation v2 from '2036617847-m9glz': 194
-customer => 503 preference => 503 fault filter abort
-customer => preference => recommendation v2 from '2036617847-m9glz': 195
-customer => 503 preference => 503 fault filter abort
-----
-
-Now, delete the 503 rule and back to random load-balancing between v1 and v2
-
-[source,bash]
-----
-istioctl delete routerule recommendation-v2-503 -n tutorial
-
-while true
-do
-curl customer-tutorial.$(minishift ip).nip.io
-sleep .5
-done
-customer => preference => recommendation v1 from '2039379827-h58vw': 129
-customer => preference => recommendation v2 from '2036617847-m9glz': 207
-customer => preference => recommendation v1 from '2039379827-h58vw': 130
+istioctl delete -f istiofiles/destination-rule-recommendation.yml -n $TUTORIAL_PROJECT
+istioctl delete -f istiofiles/virtual-service-recommendation-delay.yml -n $TUTORIAL_PROJECT
 ----
 
 === Timeout
 
-Wait only N seconds before giving up and failing. At this point, no other virtual service nor destination rule (in `tutorial` namespace) should be in effect. To check it run `istioctl get virtualservice` `istioctl get destinationrule` and if so `istioctl delete virtualservice virtualservicename -n tutorial` and `istioctl delete destinationrule destinationrulename -n tutorial`
+Wait only N seconds before giving up and failing. At this point, no other virtual service nor destination rule (in `tutorial` namespace) should be in effect. To check it run `istioctl get virtualservice` `istioctl get destinationrule` and if so `istioctl delete virtualservice virtualservicename -n $TUTORIAL_PROJECT` and `istioctl delete destinationrule destinationrulename -n $TUTORIAL_PROJECT`
 
 First, introduce some wait time in `recommendation v2` by uncommenting the line that calls the `timeout()` method. Update `RecommendationVerticle.java` making it a slow performer with a 3 second delay.
 
@@ -213,22 +103,12 @@ First, introduce some wait time in `recommendation v2` by uncommenting the line 
 
 Rebuild and redeploy
 
-[source,bash]
+[source, bash]
 ----
-cd recommendation/java/vertx
-
-mvn clean package
-
-docker build -t example/recommendation:v2 .
-
-docker images | grep recommendation
-
-oc delete pod -l app=recommendation,version=v2 -n tutorial
-or
-kubectl delete pod -l app=recommendation,version=v2 -n tutorial
-
-cd ../../..
+mvn clean package -f recommendation/java/vertx
+oc start-build recommendation-v2 --from-dir=. --follow
 ----
+
 
 Hit the customer endpoint a few times, to see the load-balancing between v1 and v2 but with v2 taking a bit of time to respond
 
@@ -246,7 +126,7 @@ Then add the timeout rule
 
 [source,bash]
 ----
-istioctl create -f istiofiles/virtual-service-recommendation-timeout.yml -n tutorial
+istioctl create -f istiofiles/virtual-service-recommendation-timeout.yml -n $TUTORIAL_PROJECT
 ----
 
 You will see it return v1 OR "upstream request timeout" after waiting about 1 second
@@ -272,5 +152,5 @@ Clean up, delete the timeout rule
 
 [source,bash]
 ----
-istioctl delete -f istiofiles/virtual-service-recommendation-timeout.yml -n tutorial
+istioctl delete -f istiofiles/virtual-service-recommendation-timeout.yml -n $TUTORIAL_PROJECT
 ----

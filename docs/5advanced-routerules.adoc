@@ -15,17 +15,19 @@ The baggage header for user agent has following form `baggage-user-agent: <value
 
 [source,bash]
 ----
-istioctl create -f istiofiles/destination-rule-recommendation-v1-v2.yml -n tutorial
-istioctl create -f istiofiles/virtual-service-recommendation-v1.yml -n tutorial
+oc login -u admin
+
+istioctl create -f istiofiles/destination-rule-recommendation-v1-v2.yml -n $TUTORIAL_PROJECT
+istioctl create -f istiofiles/virtual-service-recommendation-v1.yml -n $TUTORIAL_PROJECT
 ----
 
 ==== Set Safari users to v2
 
 [source,bash]
 ----
-istioctl replace -f istiofiles/virtual-service-safari-recommendation-v2.yml -n tutorial
+istioctl replace -f istiofiles/virtual-service-safari-recommendation-v2.yml -n $TUTORIAL_PROJECT
 
-istioctl get virtualservice -n tutorial
+istioctl get virtualservice -n $TUTORIAL_PROJECT
 ----
 
 and test with a Safari (or even Chrome on Mac since it includes Safari in the string). Safari only sees v2 responses from recommendation
@@ -36,7 +38,7 @@ There are two ways to get the URL for your browser:
 
 [source,bash]
 ----
-minishift openshift service customer --in-browser
+open "http://`oc get routes customer -o jsonpath --template '{.spec.host}'`"
 ----
 
 That will open the openshift service `customer` in browser
@@ -47,140 +49,89 @@ if you need just the url alone:
 
 [source,bash]
 ----
-minishift openshift service customer --url
-http://customer-tutorial.192.168.99.102.nip.io
+oc get routes customer -o jsonpath --template '{.spec.host}'
 ----
 
 You can also attempt to use the curl -A command to test with different user-agent strings. 
 
 [source,bash]
 ----
-curl -A Safari customer-tutorial.$(minishift ip).nip.io
-curl -A Firefox customer-tutorial.$(minishift ip).nip.io
+curl -A Safari `oc get routes customer -o jsonpath --template '{.spec.host}'`
+curl -A Firefox `oc get routes customer -o jsonpath --template '{.spec.host}'`
 ----
 
 You can describe the virtualservice to see its configuration
 
 [source,bash]
 ----
-istioctl get virtualservice -o yaml -n tutorial
+istioctl get virtualservice -o yaml -n $TUTORIAL_PROJECT
 ----
 
 ===== Remove the Safari rule
 
 [source,bash]
 ----
-istioctl delete -f istiofiles/virtual-service-safari-recommendation-v2.yml -n tutorial
+istioctl delete -f istiofiles/virtual-service-safari-recommendation-v2.yml -n $TUTORIAL_PROJECT
 ----
 
 ==== Set mobile users to v2
 
 [source,bash]
 ----
-istioctl create -f istiofiles/virtual-service-mobile-recommendation-v2.yml -n tutorial
+istioctl create -f istiofiles/virtual-service-mobile-recommendation-v2.yml -n $TUTORIAL_PROJECT
 
-curl -A "Mozilla/5.0 (iPhone; U; CPU iPhone OS 4(KHTML, like Gecko) Version/5.0.2 Mobile/8J2 Safari/6533.18.5" customer-tutorial.$(minishift ip).nip.io
+curl -A "Mozilla/5.0 (iPhone; U; CPU iPhone OS 4(KHTML, like Gecko) Version/5.0.2 Mobile/8J2 Safari/6533.18.5" `oc get routes customer -o jsonpath --template '{.spec.host}'`
 ----
 
 ===== Clean up
 
 [source,bash]
 ----
-istioctl delete -f istiofiles/destination-rule-recommendation-v1-v2.yml -n tutorial
-istioctl delete -f istiofiles/virtual-service-mobile-recommendation-v2.yml -n tutorial
+istioctl delete -f istiofiles/destination-rule-recommendation-v1-v2.yml -n $TUTORIAL_PROJECT
+istioctl delete -f istiofiles/virtual-service-mobile-recommendation-v2.yml -n $TUTORIAL_PROJECT
 ----
 
 === Mirroring Traffic (Dark Launch)
 
 [source,bash]
 ----
-oc get pods -l app=recommendation -n tutorial
-or 
-kubectl get pods -l app=recommendation -n tutorial
+oc get pods -l app=recommendation -n $TUTORIAL_PROJECT
 ----
 
 You should have 2 pods for recommendation based on the steps above
 
 [source,bash]
 ----
-istioctl get virtualservice -n tutorial
+istioctl get virtualservice -n $TUTORIAL_PROJECT
 istioctl get destinationrule
 ----
 
 You should have NO virtualservice nor destinationrule (in `tutorial` namespace) `istioctl get virtualservice` `istioctl get destinationrule` 
-if so `istioctl delete virtualservice virtualservicename -n tutorial` and `istioctl delete destinationrule destinationrulename -n tutorial`
+if so `istioctl delete virtualservice virtualservicename -n $TUTORIAL_PROJECT` and `istioctl delete destinationrule destinationrulename -n $TUTORIAL_PROJECT`
 
 Make sure you are in the main directory of "istio-tutorial"
 
 [source,bash]
 ----
-istioctl create -f istiofiles/destination-rule-recommendation-v1-v2.yml -n tutorial
-istioctl create -f istiofiles/virtual-service-recommendation-v1-mirror-v2.yml -n tutorial
+istioctl create -f istiofiles/destination-rule-recommendation-v1-v2.yml -n $TUTORIAL_PROJECT
+istioctl create -f istiofiles/virtual-service-recommendation-v1-mirror-v2.yml -n $TUTORIAL_PROJECT
 
-curl customer-tutorial.$(minishift ip).nip.io
+curl `oc get routes customer -o jsonpath --template '{.spec.host}'`
 ----
 
 Check the logs of recommendation-v2
 
 [source,bash]
 ----
-oc logs -f `oc get pods|grep recommendation-v2|awk '{ print $1 }'` -c recommendation
-or
-kubectl logs -f `oc get pods|grep recommendation-v2|awk '{ print $1 }'` -c recommendation
+oc logs -f dc/recommendation-v2 -c recommendation-v2
 ----
 
 Clean up
 
 [source,bash]
 ----
-istioctl delete -f istiofiles/destination-rule-recommendation-v1-v2.yml -n tutorial
-istioctl delete -f istiofiles/virtual-service-recommendation-v1-mirror-v2.yml -n tutorial
-----
-
-=== Access Control (NOT Working for 1.0)
-
-==== Whitelist
-
-We'll create a whitelist on the preference service to only allow requests from the recommendation service, which will make the preference service invisible to the customer service. Requests from the customer service to the preference service will return a 404 Not Found HTTP error code.
-
-[source,bash]
-----
-istioctl create -f istiofiles/acl-whitelist.yml -n tutorial
-----
-
-[source,bash]
-----
-curl customer-tutorial.$(minishift ip).nip.io
-customer => 404 NOT_FOUND:preferencewhitelist.listchecker.tutorial:customer is not whitelisted
-----
-
-===== Clean up
-
-[source,bash]
-----
-istioctl delete -f istiofiles/acl-whitelist.yml -n tutorial
-----
-
-==== Blacklist
-
-We'll create a blacklist making the customer service blacklist to the preference service. Requests from the customer service to the preference service will return a 403 Forbidden HTTP error code.
-
-[source,bash]
-----
-istioctl create -f istiofiles/acl-blacklist.yml -n tutorial
-----
-
-[source,bash]
-----
-curl customer-tutorial.$(minishift ip).nip.io
-customer => 403 PERMISSION_DENIED:denycustomerhandler.denier.tutorial:Not allowed
-----
-
-===== Clean up
-
-[source,bash]
-----
-istioctl delete -f istiofiles/acl-blacklist.yml -n tutorial
+istioctl delete -f istiofiles/destination-rule-recommendation-v1-v2.yml -n $TUTORIAL_PROJECT
+istioctl delete -f istiofiles/virtual-service-recommendation-v1-mirror-v2.yml -n $TUTORIAL_PROJECT
 ----
 
 === Load Balancer
@@ -191,9 +142,7 @@ Add another v2 pod to the mix
 
 [source,bash]
 ----
-oc scale deployment recommendation-v2 --replicas=2 -n tutorial
-or
-kubectl scale deployment recommendation-v2 --replicas=2 -n tutorial
+oc scale dc/recommendation-v2 --replicas=2 -n $TUTORIAL_PROJECT
 ----
 
 Wait a bit (oc get pods -w to watch)
@@ -201,21 +150,15 @@ and curl the customer endpoint many times
 
 [source,bash]
 ----
-curl customer-tutorial.$(minishift ip).nip.io
+curl `oc get routes customer -o jsonpath --template '{.spec.host}'`
 ----
 
 Add a 3rd v2 pod to the mix
 
 [source,bash]
 ----
-$ oc scale deployment recommendation-v2 --replicas=3 -n tutorial
-$ oc get pods -n tutorial
-
-or 
-
-$ kubectl scale deployment recommendation-v2 --replicas=3 -n tutorial
-$ kubectl get pods -n tutorial
-
+$ oc scale dc/recommendation-v2 --replicas=3 -n $TUTORIAL_PROJECT
+$ oc get pods -w -n $TUTORIAL_PROJECT
 
 NAME                                  READY     STATUS    RESTARTS   AGE
 customer-1755156816-cjd2z             2/2       Running   0          1h
@@ -232,7 +175,7 @@ Wait for those 2/2 (two containers in each pod) and then poll the customer endpo
 ----
 #!/bin/bash
 while true
-do curl customer-tutorial.$(minishift ip).nip.io
+do curl `oc get routes customer -o jsonpath --template '{.spec.host}'`
 sleep .5
 done
 ----
@@ -255,7 +198,7 @@ Now, add the Random LB DestinationPolicy
 
 [source,bash]
 ----
-istioctl create -f istiofiles/destination-rule-recommendation_lb_policy_app.yml -n tutorial
+istioctl create -f istiofiles/destination-rule-recommendation_lb_policy_app.yml -n $TUTORIAL_PROJECT
 ----
 
 And you should see a different pattern of which pod is being selected
@@ -279,68 +222,7 @@ Clean up
 
 [source,bash]
 ----
-istioctl delete -f istiofiles/destination-rule-recommendation_lb_policy_app.yml -n tutorial
+istioctl delete -f istiofiles/destination-rule-recommendation_lb_policy_app.yml -n $TUTORIAL_PROJECT
 
-oc scale deployment recommendation-v2 --replicas=1 -n tutorial
-or
-kubectl scale deployment recommendation-v2 --replicas=1 -n tutorial
-----
-
-=== Rate Limiting [Not working for 1.0]
-
-Here we will limit the number of concurrent requests into recommendation v2
-
-Now apply the rate limit handler
-
-[source,bash]
-----
-istioctl create -f istiofiles/recommendation_rate_limit_handler.yml
-----
-
-Now setup the requestcount quota
-
-[source,bash]
-----
-istioctl create -f istiofiles/rate_limit_rule.yml
-----
-
-Throw some requests at customer
-
-[source,bash]
-----
-#!/bin/bash
-while true
-do curl customer-tutorial.$(minishift ip).nip.io
-sleep .5
-done
-----
-
-You should see some 429 errors:
-
-[source,bash]
-----
-customer => preference => recommendation v2 from '2819441432-f4ls5': 108
-customer => preference => recommendation v1 from '99634814-d2z2t': 1932
-customer => preference => recommendation v2 from '2819441432-f4ls5': 109
-customer => preference => recommendation v1 from '99634814-d2z2t': 1933
-customer => 503 preference => 429 RESOURCE_EXHAUSTED:Quota is exhausted for: RequestCount
-customer => preference => recommendation v1 from '99634814-d2z2t': 1934
-customer => preference => recommendation v2 from '2819441432-f4ls5': 110
-customer => preference => recommendation v1 from '99634814-d2z2t': 1935
-customer => 503 preference => 429 RESOURCE_EXHAUSTED:Quota is exhausted for: RequestCount
-customer => preference => recommendation v1 from '99634814-d2z2t': 1936
-customer => preference => recommendation v2 from '2819441432-f4ls5': 111
-customer => preference => recommendation v1 from '99634814-d2z2t': 1937
-customer => 503 preference => 429 RESOURCE_EXHAUSTED:Quota is exhausted for: RequestCount
-customer => preference => recommendation v1 from '99634814-d2z2t': 1938
-customer => preference => recommendation v2 from '2819441432-f4ls5': 112
-----
-
-Clean up
-
-[source,bash]
-----
-istioctl delete -f istiofiles/rate_limit_rule.yml
-
-istioctl delete -f istiofiles/recommendation_rate_limit_handler.yml
+oc scale deployment recommendation-v2 --replicas=1 -n $TUTORIAL_PROJECT
 ----

@@ -6,19 +6,19 @@ Out of the box, you get monitoring via Prometheus and Grafana.
 
 [source,bash]
 ----
-open "$(minishift openshift service grafana -u)/d/1/istio-dashboard?refresh=5s&orgId=1"
+open "http://`oc get routes grafana -o jsonpath --template '{.spec.host}' -n istio-system`/d/1/istio-dashboard?refresh=5s&orgId=1"
 ----
 
-image:docs/images/grafana1.png[alt text]
+image:../docs/images/grafana1.png[alt text]
 
 [source,bash]
 ----
-open "$(minishift openshift service grafana -u)/d/UbsSZTDik/istio-workload-dashboard?refresh=5s&orgId=1"
+open "http://`oc get routes grafana -o jsonpath --template '{.spec.host}' -n istio-system`/d/UbsSZTDik/istio-workload-dashboard?refresh=5s&orgId=1"
 ----
 
 to check the "Workload of the services"
 
-image:docs/images/grafana2.png[alt text]
+image:../docs/images/grafana2.png[alt text]
 
 === Custom Metrics
 
@@ -26,7 +26,7 @@ Istio also allows you to specify custom metrics which can be seen inside of the 
 
 [source,bash]
 ----
-open "$(minishift openshift service prometheus -u)/graph?g0.range_input=5m&g0.expr=&g0.tab=0"
+open "http://`oc get routes prometheus -o jsonpath --template '{.spec.host}' -n istio-system`/graph?g0.range_input=5m&g0.expr=&g0.tab=0"
 ----
 
 Add the custom metric and rule. First make sure you are in the "istio-tutorial" directory and then
@@ -40,18 +40,18 @@ In the Prometheus dashboard, add the following
 
 [source,bash]
 ----
-istio_requests_total{destination_service="recommendation.tutorial.svc.cluster.local"}
+istio_requests_total{destination_service="recommendation.<TUTORIAL_PROJECT>.svc.cluster.local"}
 ----
 
 and select `Execute`
 
-image:docs/images/prometheus_custom_metric.png[alt text]
+image:../docs/images/prometheus_custom_metric.png[alt text]
 
 Then run several requests through the system
 
 [source,bash]
 ----
-while true; do curl customer-tutorial.$(minishift ip).nip.io; sleep .5;  done
+while true; do curl `oc get routes customer -o jsonpath --template '{.spec.host}'`; sleep .5;  done
 ----
 
 NOTE: You may have to refresh the browser for the Prometheus graph to update. And you may wish to make the interval 5m (5 minutes) as seen in the screenshot above.
@@ -68,7 +68,7 @@ Let's open the Jaeger console, select `customer` from the list of services and c
 
 [source,bash]
 ----
-minishift openshift service tracing --in-browser
+open "http://`oc get routes tracing -o jsonpath --template '{.spec.host}' -n istio-system`"
 ----
 
-image:docs/images/jaegerUI.png[Trace as seen in Jaeger]
+image:../docs/images/jaegerUI.png[Trace as seen in Jaeger]
