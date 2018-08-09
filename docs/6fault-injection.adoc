@@ -9,8 +9,6 @@ By default, recommendation v1 and v2 are being randomly load-balanced as that is
 [source,bash]
 ----
 $ oc get pods -l app=recommendation -n $TUTORIAL_PROJECT
-or
-$ kubectl get pods -l app=recommendation -n $TUTORIAL_PROJECT
 
 NAME                                  READY     STATUS    RESTARTS   AGE
 recommendation-v1-3719512284-7mlzw   2/2       Running   6          18h
