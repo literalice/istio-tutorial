@@ -276,7 +276,7 @@ By simply adding a *retry* configuration to our current `virtualservice`, we'll 
 
 [source,bash]
 ----
-istioctl replace -f istiofiles/virtual-service-recommendation-v1_and_v2_retry.yml -n tutorial
+istioctl replace -f istiofiles/virtual-service-recommendation-v1_and_v2_retry.yml -n $TUTORIAL_PROJECT
 ----
 
 Throw some requests at the customer endpoint:
