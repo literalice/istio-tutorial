@@ -20,8 +20,8 @@ Second, you need to *ensure* you have a `destinationrule` and `virtualservice` i
 
 [source,bash]
 ----
-istioctl create -f istiofiles/destination-rule-recommendation-v1-v2.yml -n tutorial
-istioctl create -f istiofiles/virtual-service-recommendation-v1_and_v2_50_50.yml -n tutorial
+istioctl create -f istiofiles/destination-rule-recommendation-v1-v2.yml -n $TUTORIAL_PROJECT
+istioctl create -f istiofiles/virtual-service-recommendation-v1_and_v2_50_50.yml -n $TUTORIAL_PROJECT
 ----
 
 ==== Load test without circuit breaker
@@ -43,9 +43,9 @@ But suppose that in a production system this 3s delay was caused by too many con
 
 [source,bash]
 ----
-istioctl replace -f istiofiles/destination-rule-recommendation_cb_policy_version_v2.yml -n tutorial
+istioctl replace -f istiofiles/destination-rule-recommendation_cb_policy_version_v2.yml -n $TUTORIAL_PROJECT
 
-istioctl get destinationrule -n tutorial
+istioctl get destinationrule -n $TUTORIAL_PROJECT
 ----
 
 More information on the fields for the simple circuit-breaker
@@ -68,8 +68,8 @@ Clean up
 
 [source,bash]
 ----
-istioctl delete virtualservice recommendation -n tutorial
-istioctl delete -f istiofiles/destination-rule-recommendation_cb_policy_version_v2.yml -n tutorial
+istioctl delete virtualservice recommendation -n $TUTORIAL_PROJECT
+istioctl delete -f istiofiles/destination-rule-recommendation_cb_policy_version_v2.yml -n $TUTORIAL_PROJECT
 ----
 
 === Pool Ejection
@@ -80,20 +80,20 @@ First, you need to insure you have a `destinationrule` and `virtualservice` in p
 
 [source,bash]
 ----
-istioctl create -f istiofiles/destination-rule-recommendation-v1-v2.yml -n tutorial
-istioctl create -f istiofiles/virtual-service-recommendation-v1_and_v2_50_50.yml -n tutorial
+istioctl create -f istiofiles/destination-rule-recommendation-v1-v2.yml -n $TUTORIAL_PROJECT
+istioctl create -f istiofiles/virtual-service-recommendation-v1_and_v2_50_50.yml -n $TUTORIAL_PROJECT
 ----
 
 Scale number of instances of `v2` deployment
 
 [source,bash]
 ----
-oc scale deployment recommendation-v2 --replicas=2 -n tutorial
+oc scale deployment recommendation-v2 --replicas=2 -n $TUTORIAL_PROJECT
 oc get pods -w
 
 or
 
-kubectl scale deployment recommendation-v2 --replicas=2 -n tutorial
+kubectl scale deployment recommendation-v2 --replicas=2 -n $TUTORIAL_PROJECT
 kubectl get pods -w
 ----
 
@@ -162,8 +162,6 @@ Now we'll get into one the pods and add some erratic behavior on it. Get one of 
 [source,bash]
 ----
 oc exec -it $(oc get pods|grep recommendation-v2|awk '{ print $1 }'|head -1) -c recommendation /bin/bash
-or
-kubectl exec -it $(oc get pods|grep recommendation-v2|awk '{ print $1 }'|head -1) -c recommendation /bin/bash
 ----
 
 You will be inside the application container of your pod `recommendation-v2-2036617847-spdrb`. Now execute:
@@ -215,7 +213,7 @@ Now let's add the pool ejection behavior:
 
 [source,bash]
 ----
-istioctl replace -f istiofiles/destination-rule-recommendation_cb_policy_pool_ejection.yml -n tutorial
+istioctl replace -f istiofiles/destination-rule-recommendation_cb_policy_pool_ejection.yml -n $TUTORIAL_PROJECT
 ----
 
 Throw some requests at the customer endpoint:
@@ -342,13 +340,13 @@ Clean up
 
 [source,bash]
 ----
-oc scale deployment recommendation-v2 --replicas=1 -n tutorial
+oc scale deployment recommendation-v2 --replicas=1 -n $TUTORIAL_PROJECT
 oc delete pod -l app=recommendation,version=v2
 or
-kubectl scale deployment recommendation-v2 --replicas=1 -n tutorial
+kubectl scale deployment recommendation-v2 --replicas=1 -n $TUTORIAL_PROJECT
 kubectl delete pod -l app=recommendation,version=v2
 
 
-istioctl delete virtualservice recommendation -n tutorial
-istioctl delete destinationrule recommendation -n tutorial
+istioctl delete virtualservice recommendation -n $TUTORIAL_PROJECT
+istioctl delete destinationrule recommendation -n $TUTORIAL_PROJECT
 ----
