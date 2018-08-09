@@ -333,12 +333,8 @@ Clean up
 
 [source,bash]
 ----
-oc scale deployment recommendation-v2 --replicas=1 -n $TUTORIAL_PROJECT
+oc scale dc/recommendation-v2 --replicas=1 -n $TUTORIAL_PROJECT
 oc delete pod -l app=recommendation,version=v2
-or
-kubectl scale deployment recommendation-v2 --replicas=1 -n $TUTORIAL_PROJECT
-kubectl delete pod -l app=recommendation,version=v2
-
 
 istioctl delete virtualservice recommendation -n $TUTORIAL_PROJECT
 istioctl delete destinationrule recommendation -n $TUTORIAL_PROJECT
