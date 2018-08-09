@@ -103,7 +103,6 @@ Rebuild and redeploy
 
 [source, bash]
 ----
-mvn clean package -f recommendation/java/vertx
 oc start-build recommendation-v2 --from-dir=. --follow
 ----
 
