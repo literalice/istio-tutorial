@@ -43,8 +43,8 @@ recommendation-v2.yml should be edited for adding a port like that.
             value: preference
           - name: JAVA_OPTIONS
             value: -Xms128m -Xmx256m -Djava.net.preferIPv4Stack=true
-          image: preference-v1:latest
-          name: preference-v1
+          image: recommendation-v2:latest
+          name: recommendation-v2
           ports:
           - containerPort: 8080 # you need add this
             protocol: TCP
