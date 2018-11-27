@@ -187,10 +187,37 @@ IMPORTANT: The tag `v1` at the end of the image name matters. We will be creatin
 [source, bash]
 ----
 oc new-app -l app=recommendation,version=v1 --name=recommendation-v1 --context-dir=recommendation/java/vertx JAVA_OPTIONS='-Xms128m -Xmx256m -Djava.net.preferIPv4Stack=true' fabric8/s2i-java~https://github.com/redhat-developer-demos/istio-tutorial -o yaml  > recommendation.yml
+vim recommendation.yml # edit it for adding a 8080 port. see following
 oc apply -f <(istioctl kube-inject -f recommendation.yml) -n $TUTORIAL_PROJECT
 oc delete svc/recommendation-v1 ; oc create -f recommendation/kubernetes/Service.yml
 oc logs bc/recommendation-v1 -f
 ----
+
+recommendation.yml should be edited for adding a port like that.
+
+[source, yaml]
+----
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+# ...
+          - name: JAEGER_SERVICE_NAME
+            value: preference
+          - name: JAVA_OPTIONS
+            value: -Xms128m -Xmx256m -Djava.net.preferIPv4Stack=true
+          image: recommendation-v1:latest
+          name: recommendation-v1
+          ports:
+          - containerPort: 8080 # you need add this
+            protocol: TCP
+          - containerPort: 9779
+            protocol: TCP
+          - containerPort: 8778
+            protocol: TCP
+----
+
 
 ==== Wait recommendation to be deployed
 
