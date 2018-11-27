@@ -7,6 +7,8 @@ Out of the box, you get monitoring via Prometheus and Grafana.
 [source,bash]
 ----
 open "http://`oc get routes grafana -o jsonpath --template '{.spec.host}' -n istio-system`/d/1/istio-dashboard?refresh=5s&orgId=1"
+# or go to next url by browser
+echo "http://`oc get routes grafana -o jsonpath --template '{.spec.host}' -n istio-system`/d/1/istio-dashboard?refresh=5s&orgId=1"
 ----
 
 image:../docs/images/grafana1.png[alt text]
@@ -14,6 +16,8 @@ image:../docs/images/grafana1.png[alt text]
 [source,bash]
 ----
 open "http://`oc get routes grafana -o jsonpath --template '{.spec.host}' -n istio-system`/d/UbsSZTDik/istio-workload-dashboard?refresh=5s&orgId=1"
+# or go to next url by browser
+echo "http://`oc get routes grafana -o jsonpath --template '{.spec.host}' -n istio-system`/d/UbsSZTDik/istio-workload-dashboard?refresh=5s&orgId=1"
 ----
 
 to check the "Workload of the services"
@@ -27,6 +31,8 @@ Istio also allows you to specify custom metrics which can be seen inside of the 
 [source,bash]
 ----
 open "http://`oc get routes prometheus -o jsonpath --template '{.spec.host}' -n istio-system`/graph?g0.range_input=5m&g0.expr=&g0.tab=0"
+# or go to next url by browser
+echo "http://`oc get routes prometheus -o jsonpath --template '{.spec.host}' -n istio-system`/graph?g0.range_input=5m&g0.expr=&g0.tab=0"
 ----
 
 Add the custom metric and rule. First make sure you are in the "istio-tutorial" directory and then
@@ -69,7 +75,9 @@ Let's open the Jaeger console, select `customer` from the list of services and c
 
 [source,bash]
 ----
-open "http://`oc get routes tracing -o jsonpath --template '{.spec.host}' -n istio-system`"
+open "https://`oc get routes tracing -o jsonpath --template '{.spec.host}' -n istio-system`"
+# or go to next url by browser
+echo "https://`oc get routes tracing -o jsonpath --template '{.spec.host}' -n istio-system`"
 ----
 
 image:../docs/images/jaegerUI.png[Trace as seen in Jaeger]
