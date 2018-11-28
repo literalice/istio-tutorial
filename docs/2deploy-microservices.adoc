@@ -17,7 +17,7 @@ export TUTORIAL_USER=<xxx>
 export TUTORIAL_PROJECT=<xxx>
 oc new-project $TUTORIAL_PROJECT
 
-# You need to be cluster-admin
+# You need to be cluster-admin(already done by a instructor)
 oc adm policy add-scc-to-user privileged -z default -n $TUTORIAL_PROJECT
 ----
 
