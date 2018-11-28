@@ -26,8 +26,8 @@ Then clone the git repository
 [source,bash]
 ----
 # Make sure this project exists in local pc
-# git clone https://github.com/literalice/istio-tutorial
-# cd istio-tutorial
+git clone https://github.com/literalice/istio-tutorial
+cd istio-tutorial
 ----
 
 Start deploying the microservice projects, starting with customer
