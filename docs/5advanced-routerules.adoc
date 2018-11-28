@@ -222,5 +222,5 @@ Clean up
 ----
 istioctl delete -f istiofiles/destination-rule-recommendation_lb_policy_app.yml -n $TUTORIAL_PROJECT
 
-oc scale deployment recommendation-v2 --replicas=1 -n $TUTORIAL_PROJECT
+oc scale dc/recommendation-v2 --replicas=1 -n $TUTORIAL_PROJECT
 ----
